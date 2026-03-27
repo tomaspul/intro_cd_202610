@@ -1,355 +1,152 @@
-## 🧠 Metodología
+<div align="center">
  
-### 🗺️ Vista General del Pipeline
+---
+ 
+## 🔬 Metodología
+ 
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Comfortaa&size=22&pause=1200&color=0d4a2a&center=true&vCenter=true&width=1000&height=60&lines=¿Cómo+le+decimos+a+los+datos+que+nos+cuenten+una+historia%3F;7+pasos+para+anticipar+la+deserción+escolar+📚)](https://git.io/typing-svg)
+ 
+> *Cada fase es un escalón. Juntas, convierten filas en una base de datos en alertas que salvan trayectorias de vida.*
+ 
+---
+ 
+### Fase 1 · Entendimiento del Problema 🧭
+ 
+<img src="https://img.shields.io/badge/Etapa-Estratégica-0d4a2a?style=for-the-badge&logoColor=white"/>
+ 
+Antes de tocar un solo dato, nos preguntamos: **¿qué queremos resolver realmente?**
+ 
+El Ministerio de Educación necesita anticiparse — no reaccionar. Aquí definimos la pregunta central del proyecto, el tipo de solución (un modelo de clasificación), quiénes van a usar los resultados (orientadores escolares), y qué significaría que el modelo funcione bien. También establecemos el horizonte de predicción: **3 meses antes** de que ocurra la deserción.
  
 ```
-Datos Históricos  →  Preprocesamiento  →  Modelado  →  Alerta Temprana  →  Intervención
-  (MEN / SED)           (ETL + EDA)       (ML / XGBoost)   (Dashboard)        (Orientadores)
+🎯 Pregunta clave:
+¿Puede un modelo de datos identificar, al inicio del período,
+qué estudiante tiene riesgo de no terminar el año?
 ```
  
 ---
  
-### 📋 Fase 1 — Definición del Problema
+### Fase 2 · Recolección de Datos 🗄️
  
-<details>
-<summary>🔍 <strong>¿Qué queremos predecir? — click para expandir</strong></summary>
-<br>
+<img src="https://img.shields.io/badge/Etapa-Fundacional-1a6b3c?style=for-the-badge&logoColor=white"/>
  
-**Variable objetivo (target):**
+Los datos vienen del **Sistema Educativo Distrital (SED)** y el **Ministerio de Educación Nacional (MEN)**. Aquí identificamos qué registros históricos tenemos disponibles y cuáles variables son relevantes para el problema.
  
-```python
-# Definición de la etiqueta de deserción
-# 1 = El estudiante abandonó antes de graduarse
-# 0 = El estudiante completó el período con normalidad
+Trabajamos con información de **42.500 estudiantes** de bachillerato en **214 colegios públicos** de Bogotá entre 2019 y 2023. Cada registro es una historia: cuánto faltó, cómo le fue, dónde vive, con quién vive.
  
-target = "desercion_semestre"  # Variable binaria
 ```
- 
-**Horizonte de predicción:** 3 meses hacia adelante, al inicio de cada período escolar.
- 
-**Unidad de análisis:** Estudiante × Período académico
- 
-**Criterio de éxito:**
-| Métrica | Meta |
-|---------|------|
-| Recall (sensibilidad) | ≥ 80% (priorizar no perder casos reales) |
-| Precisión | ≥ 70% |
-| F1-Score | ≥ 0.75 |
-| AUC-ROC | ≥ 0.85 |
- 
-> ⚠️ **Nota:** En este contexto, **el recall es más importante que la precisión**. Es preferible alertar de más estudiantes en riesgo (falsos positivos controlables) que dejar sin atención a un estudiante que sí desertará.
- 
-</details>
+📦 Fuentes principales:
+   ├── SIMAT (Sistema Integrado de Matrícula)
+   ├── Registros de calificaciones por período
+   ├── Encuestas socioeconómicas estudiantiles
+   └── Datos de geolocalización por localidad
+```
  
 ---
  
-### 🔧 Fase 2 — Recolección y Fuentes de Datos
+### Fase 3 · Exploración de los Datos (EDA) 🔍
  
-<details>
-<summary>🗄️ <strong>Variables disponibles — click para expandir</strong></summary>
-<br>
+<img src="https://img.shields.io/badge/Etapa-Descubrimiento-20b267?style=for-the-badge&logoColor=white"/>
  
-```python
-variables = {
-    "academicas": [
-        "notas_matematicas",
-        "notas_lenguaje",
-        "notas_ciencias",
-        "promedio_general",
-        "materias_reprobadas"
-    ],
-    "asistencia": [
-        "inasistencias_mes_1",
-        "inasistencias_mes_2",
-        "inasistencias_mes_3",
-        "tendencia_inasistencia"   # feature engineered
-    ],
-    "socioeconomicas": [
-        "estrato",
-        "distancia_colegio_km",
-        "trabaja",                 # booleano
-        "tipo_hogar",              # ambos padres / solo uno / otro
-        "recibe_subsidio"
-    ],
-    "historicas": [
-        "repitencia_anos_anteriores",
-        "cambios_de_colegio",
-        "anio_escolar_actual"
-    ]
-}
-```
+Antes de construir cualquier modelo, **escuchamos lo que los datos tienen para decir**. En esta fase hacemos preguntas, graficamos distribuciones, buscamos patrones y encontramos los primeros indicios de qué variables importan más.
  
-| Categoría | Variables | Tipo |
-|-----------|-----------|------|
-| 📊 Académicas | Notas por materia, reprobación | Numéricas |
-| 📅 Asistencia | Inasistencias por mes | Numéricas / Serie temporal |
-| 🏘️ Socioeconómicas | Estrato, distancia, hogar | Mixtas |
-| 🔁 Historial | Repitencia, cambios de colegio | Categóricas / Enteras |
+Algunos hallazgos que esperamos descubrir:
  
-</details>
+| 🔎 Pregunta | 📊 Lo que buscamos |
+|---|---|
+| ¿Cuándo empieza a caer la asistencia? | Meses previos a la deserción |
+| ¿Qué localidades concentran más casos? | Mapas de riesgo por zona |
+| ¿Trabajar afecta el rendimiento? | Relación trabajo–notas–ausencias |
+| ¿Qué tan desbalanceados están los datos? | % de desertores vs. no desertores |
+ 
+> 💡 *El EDA no es un trámite. Es donde el analista aprende a ver lo que los números esconden.*
  
 ---
  
-### 🔍 Fase 3 — Análisis Exploratorio (EDA)
+### Fase 4 · Preparación de los Datos ⚙️
  
-<details>
-<summary>📊 <strong>Preguntas clave del EDA — click para expandir</strong></summary>
-<br>
+<img src="https://img.shields.io/badge/Etapa-Transformación-0d4a2a?style=for-the-badge&logoColor=white"/>
  
-```python
-# Preguntas que guían el análisis exploratorio
+Los datos rara vez llegan limpios. En esta fase los transformamos para que el modelo pueda entenderlos. Tratamos valores faltantes, convertimos categorías en números, normalizamos escalas y creamos **nuevas variables** que capturen señales que las originales no muestran solas.
  
-preguntas_eda = [
-    "¿Cuál es la tasa de deserción por localidad en Bogotá?",
-    "¿Existe correlación entre inasistencias y deserción?",
-    "¿Los estudiantes que trabajan tienen mayor riesgo?",
-    "¿Qué estrato concentra más casos de deserción?",
-    "¿Las notas de qué materia predicen mejor el abandono?",
-    "¿Cuántos meses antes de desertar empieza a caer la asistencia?",
-    "¿Hay diferencias por género o por ciclo escolar?"
-]
+Por ejemplo: un estudiante con inasistencias crecientes mes a mes es más riesgoso que uno con el mismo total distribuido uniformemente. Esa *tendencia* es una variable nueva que construimos aquí.
+ 
 ```
- 
-**Herramientas usadas:**
- 
-![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat-square&logo=pandas&logoColor=white)
-![Seaborn](https://img.shields.io/badge/Seaborn-4EAFC3?style=flat-square&logo=python&logoColor=white)
-![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=flat-square&logo=plotly&logoColor=white)
-![Matplotlib](https://img.shields.io/badge/Matplotlib-11557c?style=flat-square&logo=python&logoColor=white)
- 
-**Hallazgos esperados:**
-- `inasistencias_mes_1` y `inasistencias_mes_2` con alta correlación con la variable objetivo
-- `trabaja = True` como factor de riesgo significativo en grados 9°–11°
-- `repitencia_anos_anteriores > 1` como predictor muy fuerte
-- Distribución desbalanceada de clases (90%–10% aprox.)
- 
-</details>
+🛠️ Lo que hacemos en esta fase:
+   ├── Limpieza de valores nulos o inconsistentes
+   ├── Codificación de variables categóricas
+   ├── Creación de variables derivadas (Feature Engineering)
+   ├── Normalización de escalas numéricas
+   └── Balanceo de clases (los desertores son minoría en los datos)
+```
  
 ---
  
-### ⚙️ Fase 4 — Preprocesamiento y Feature Engineering
+### Fase 5 · Modelado 🤖
  
-<details>
-<summary>🛠️ <strong>Transformaciones aplicadas — click para expandir</strong></summary>
-<br>
+<img src="https://img.shields.io/badge/Etapa-Núcleo_del_Proyecto-1a6b3c?style=for-the-badge&logoColor=white"/>
  
-```python
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+Aquí entrenamos el modelo que aprenderá a identificar patrones de riesgo a partir de los datos históricos. Probamos varios algoritmos de clasificación y comparamos cuál se desempeña mejor para nuestro objetivo.
  
-# ── 1. Manejo de valores nulos ──────────────────────────────────────
-df["notas_matematicas"].fillna(df["notas_matematicas"].median(), inplace=True)
-df["distancia_colegio_km"].fillna(df["distancia_colegio_km"].mean(), inplace=True)
+Dado que nos importa **no perder casos reales de deserción**, priorizamos modelos con alta sensibilidad — preferiríamos alertar de más que dejar sin atención a un estudiante en riesgo.
  
-# ── 2. Encoding de variables categóricas ───────────────────────────
-df["tipo_hogar_cod"] = LabelEncoder().fit_transform(df["tipo_hogar"])
+| 🧠 Modelo | ¿Por qué lo probamos? |
+|---|---|
+| Regresión Logística | Línea base sencilla e interpretable |
+| Random Forest | Robusto y maneja variables mixtas |
+| Gradient Boosting | Excelente para datos desbalanceados |
+| XGBoost ✅ | Mayor precisión y control del sesgo |
  
-# ── 3. Feature Engineering (nuevas variables derivadas) ────────────
-# Tendencia de inasistencia (¿está empeorando?)
-df["tendencia_inasistencia"] = df["inasistencias_mes_2"] - df["inasistencias_mes_1"]
- 
-# Carga académica bajo presión (trabaja y bajo rendimiento)
-df["riesgo_laboral_academico"] = (
-    (df["trabaja"] == 1) & (df["promedio_general"] < 3.0)
-).astype(int)
- 
-# Índice de vulnerabilidad compuesto
-df["indice_vulnerabilidad"] = (
-    (6 - df["estrato"]) * 0.3 +
-    df["repitencia_anos_anteriores"] * 0.4 +
-    df["trabaja"] * 0.3
-)
- 
-# ── 4. Escalado de variables numéricas ─────────────────────────────
-scaler = StandardScaler()
-cols_numericas = ["inasistencias_mes_1", "distancia_colegio_km", "promedio_general"]
-df[cols_numericas] = scaler.fit_transform(df[cols_numericas])
-```
- 
-**Manejo del desbalance de clases:**
-```python
-from imblearn.over_sampling import SMOTE
- 
-# SMOTE para balancear la clase minoritaria (desertores)
-smote = SMOTE(sampling_strategy=0.4, random_state=42)
-X_res, y_res = smote.fit_resample(X_train, y_train)
-```
- 
-</details>
+> *Elegimos el modelo como elegimos un médico: no solo el más sofisticado, sino el más confiable para este caso específico.*
  
 ---
  
-### 🤖 Fase 5 — Modelado y Entrenamiento
+### Fase 6 · Evaluación e Interpretabilidad 📊
  
-<details>
-<summary>⚡ <strong>Modelos evaluados y selección final — click para expandir</strong></summary>
-<br>
+<img src="https://img.shields.io/badge/Etapa-Validación-20b267?style=for-the-badge&logoColor=white"/>
  
-```python
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from xgboost import XGBClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+Un modelo que funciona pero nadie entiende no sirve en la práctica. En esta fase medimos qué tan bien predice el modelo y, sobre todo, **explicamos por qué toma cada decisión**.
  
-# Modelos candidatos
-modelos = {
-    "Logistic Regression": LogisticRegression(max_iter=1000),
-    "Random Forest":       RandomForestClassifier(n_estimators=200, random_state=42),
-    "Gradient Boosting":   GradientBoostingClassifier(n_estimators=150),
-    "XGBoost":             XGBClassifier(use_label_encoder=False, eval_metric="logloss")
-}
+Usamos **SHAP** (SHapley Additive exPlanations), una técnica que permite ver cuánto aportó cada variable a la predicción de un estudiante específico. Así un orientador puede saber: *"este alumno está en riesgo principalmente porque faltó 14 días en el último mes y trabaja"*.
  
-# Validación cruzada estratificada (respeta el desbalance)
-cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
- 
-for nombre, modelo in modelos.items():
-    scores = cross_val_score(modelo, X_res, y_res, cv=cv, scoring="roc_auc")
-    print(f"{nombre}: AUC = {scores.mean():.3f} ± {scores.std():.3f}")
 ```
- 
-**Comparativa de modelos:**
- 
-| Modelo | AUC-ROC | Recall | Precisión | F1 |
-|--------|---------|--------|-----------|----|
-| Logistic Regression | 0.79 | 0.71 | 0.68 | 0.69 |
-| Random Forest | 0.86 | 0.79 | 0.74 | 0.76 |
-| Gradient Boosting | 0.88 | 0.82 | 0.76 | 0.79 |
-| **✅ XGBoost** | **0.91** | **0.85** | **0.78** | **0.81** |
- 
-**→ Modelo seleccionado: XGBoost** por su mayor recall y AUC-ROC.
- 
-```python
-# Modelo final con hiperparámetros optimizados (Optuna)
-modelo_final = XGBClassifier(
-    n_estimators=300,
-    max_depth=6,
-    learning_rate=0.05,
-    subsample=0.8,
-    colsample_bytree=0.8,
-    scale_pos_weight=4,     # Penaliza más los falsos negativos
-    random_state=42
-)
+📏 Métricas que evaluamos:
+   ├── AUC-ROC     → ¿Qué tan bien distingue entre casos?
+   ├── Recall      → ¿Cuántos desertores reales detectamos?
+   ├── Precisión   → ¿Cuántas alertas son correctas?
+   ├── F1-Score    → Balance entre las dos anteriores
+   └── Sesgo       → ¿El modelo es justo entre estratos y géneros?
 ```
- 
-</details>
  
 ---
  
-### 📈 Fase 6 — Evaluación e Interpretabilidad
+### Fase 7 · Despliegue y Sistema de Alertas 🚀
  
-<details>
-<summary>🔬 <strong>Métricas, SHAP y validación ética — click para expandir</strong></summary>
-<br>
+<img src="https://img.shields.io/badge/Etapa-Impacto_Real-0d4a2a?style=for-the-badge&logoColor=white"/>
  
-```python
-import shap
-import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
+El modelo no vive en un notebook. Vive en manos de quienes pueden actuar. En esta última fase construimos el sistema que pone las predicciones al servicio de los orientadores escolares, de forma simple y accionable.
  
-# ── Métricas de evaluación ─────────────────────────────────────────
-y_pred = modelo_final.predict(X_test)
-y_proba = modelo_final.predict_proba(X_test)[:, 1]
+Al inicio de cada período, el sistema genera una lista priorizada por colegio con el nivel de riesgo de cada estudiante y una sugerencia de intervención: llamar al acudiente, gestionar subsidio de transporte, remitir a apoyo psicosocial.
  
-print(classification_report(y_test, y_pred, target_names=["No deserta", "Deserta"]))
-print(f"AUC-ROC: {roc_auc_score(y_test, y_proba):.4f}")
- 
-# ── SHAP: ¿Por qué el modelo toma cada decisión? ──────────────────
-explainer = shap.TreeExplainer(modelo_final)
-shap_values = explainer.shap_values(X_test)
- 
-# Gráfica de importancia global de variables
-shap.summary_plot(shap_values, X_test, plot_type="bar")
- 
-# Explicación individual por estudiante
-shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0])
-```
- 
-**Variables más importantes (SHAP):**
+| 🟢 Riesgo Bajo | 🟡 Riesgo Medio | 🔴 Riesgo Alto |
+|---|---|---|
+| Monitoreo mensual | Contacto con familia | Intervención inmediata |
+| Seguimiento de asistencia | Apoyo académico dirigido | Orientación + subsidios |
  
 ```
-1. inasistencias_mes_2          ████████████████████  0.38
-2. repitencia_anos_anteriores   █████████████████     0.31
-3. tendencia_inasistencia       ██████████████        0.27
-4. promedio_general             ████████████          0.23
-5. trabaja                      ██████████            0.19
-6. estrato                      ████████              0.16
-7. indice_vulnerabilidad        ███████               0.14
-8. distancia_colegio_km         █████                 0.10
+🌐 Herramientas del sistema:
+   ├── API de predicción en tiempo real
+   ├── Dashboard interactivo para orientadores
+   ├── Reportes automáticos por colegio
+   └── Alertas semanales por correo / SMS
 ```
  
-**Validación ética del modelo:**
-- [x] ✅ El modelo NO discrimina por género ni etnia
-- [x] ✅ Calibración verificada (las probabilidades son confiables)
-- [x] ✅ Sesgo revisado por estrato socioeconómico
-- [x] ✅ Explicabilidad con SHAP para cada predicción individual
- 
-</details>
+> *La ciencia de datos no termina cuando el modelo aprende. Termina cuando un estudiante no abandona.*
  
 ---
  
-### 🚀 Fase 7 — Despliegue y Sistema de Alertas
+<br/>
  
-<details>
-<summary>🌐 <strong>Arquitectura del sistema en producción — click para expandir</strong></summary>
-<br>
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Comfortaa&size=18&pause=1500&color=20b267&center=true&vCenter=true&width=1000&height=50&lines=Fase+1+🧭+→+Fase+2+🗄️+→+Fase+3+🔍+→+Fase+4+⚙️+→+Fase+5+🤖+→+Fase+6+📊+→+Fase+7+🚀)](https://git.io/typing-svg)
  
-```python
-from fastapi import FastAPI
-from pydantic import BaseModel
-import joblib
- 
-app = FastAPI(title="API de Alertas de Deserción Escolar")
-modelo = joblib.load("modelo_desercion_v2.pkl")
- 
-class EstudianteInput(BaseModel):
-    inasistencias_mes_1: float
-    inasistencias_mes_2: float
-    promedio_general: float
-    estrato: int
-    trabaja: bool
-    repitencia_anos_anteriores: int
-    distancia_colegio_km: float
-    tipo_hogar: str
- 
-@app.post("/predecir")
-def predecir_riesgo(datos: EstudianteInput):
-    X = preparar_features(datos)
-    probabilidad = modelo.predict_proba(X)[0][1]
-    
-    nivel_riesgo = (
-        "🔴 ALTO"   if probabilidad > 0.70 else
-        "🟡 MEDIO"  if probabilidad > 0.40 else
-        "🟢 BAJO"
-    )
-    
-    return {
-        "probabilidad_desercion": round(probabilidad * 100, 1),
-        "nivel_riesgo": nivel_riesgo,
-        "accion_sugerida": get_accion(probabilidad)
-    }
-```
- 
-**Ejemplo de respuesta de la API:**
-```json
-{
-  "estudiante_id": "BOG-2025-00847",
-  "colegio": "IED Simón Bolívar",
-  "grado": "10°",
-  "probabilidad_desercion": 78.3,
-  "nivel_riesgo": "🔴 ALTO",
-  "accion_sugerida": "Contactar acudiente esta semana + remitir a orientación"
-}
-```
- 
-**Stack tecnológico de producción:**
- 
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
- 
-</details>
- 
----
+</div>
